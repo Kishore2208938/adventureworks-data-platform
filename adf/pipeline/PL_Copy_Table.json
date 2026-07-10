@@ -76,7 +76,7 @@
 								"type": "Expression"
 							},
 							"filename": {
-								"value": "@concat(\r\n    pipeline().parameters.P_TargetFolder,\r\n    '/',\r\n    pipeline().parameters.P_SourceTable,\r\n    '.parquet'\r\n)",
+								"value": "@concat(\n    pipeline().parameters.P_TargetFolder,\n    '/',\n    pipeline().parameters.P_SourceTable,\n    '.parquet'\n)",
 								"type": "Expression"
 							}
 						}
