@@ -240,6 +240,7 @@
 				}
 			}
 		],
+		"concurrency": 6,
 		"parameters": {
 			"P_LoadType": {
 				"type": "string",
