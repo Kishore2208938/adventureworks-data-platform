@@ -68,7 +68,7 @@
 									"referenceName": "PL_Copy_Table",
 									"type": "PipelineReference"
 								},
-								"waitOnCompletion": true,
+								"waitOnCompletion": false,
 								"parameters": {
 									"P_SourceSchema": {
 										"value": "@item().sourceschema",
@@ -215,15 +215,21 @@
 					"storedProcedureName": "[logging].[usp_EndPipeline]",
 					"storedProcedureParameters": {
 						"ErrorMessage": {
-							"value": "",
+							"value": null,
 							"type": "String"
 						},
 						"ExecutionLogID": {
-							"value": "",
+							"value": {
+								"value": "@variables('V_ExecutionLogId')",
+								"type": "Expression"
+							},
 							"type": "Int64"
 						},
 						"ExecutionStatus": {
-							"value": "",
+							"value": {
+								"value": "@'Success'",
+								"type": "Expression"
+							},
 							"type": "String"
 						}
 					}
@@ -236,13 +242,16 @@
 		],
 		"parameters": {
 			"P_LoadType": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "full"
 			},
 			"P_PipelineName": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "generic"
 			},
 			"P_SourceSystem": {
-				"type": "string"
+				"type": "string",
+				"defaultValue": "ADV"
 			}
 		},
 		"variables": {
