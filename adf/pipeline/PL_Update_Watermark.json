@@ -48,16 +48,13 @@
 		],
 		"parameters": {
 			"P_SourceTableId": {
-				"type": "string",
-				"defaultValue": "1"
+				"type": "string"
 			},
 			"P_Watermark": {
-				"type": "string",
-				"defaultValue": "21.33"
+				"type": "string"
 			},
 			"P_Status": {
-				"type": "string",
-				"defaultValue": "completed"
+				"type": "string"
 			}
 		},
 		"annotations": []

@@ -76,7 +76,7 @@
 								"type": "Expression"
 							},
 							"filename": {
-								"value": "@pipeline().parameters.P_TargetFolder",
+								"value": "@concat(\r\n    pipeline().parameters.P_TargetFolder,\r\n    '/',\r\n    pipeline().parameters.P_SourceTable,\r\n    '.parquet'\r\n)",
 								"type": "Expression"
 							}
 						}
@@ -328,16 +328,13 @@
 		],
 		"parameters": {
 			"P_SourceSchema": {
-				"type": "string",
-				"defaultValue": "sales"
+				"type": "string"
 			},
 			"P_SourceTableId": {
-				"type": "int",
-				"defaultValue": 6
+				"type": "int"
 			},
 			"P_TargetContainer": {
-				"type": "string",
-				"defaultValue": "data/raw/"
+				"type": "string"
 			},
 			"P_CompressionType": {
 				"type": "string"
@@ -346,23 +343,19 @@
 				"type": "string"
 			},
 			"P_LoadType": {
-				"type": "string",
-				"defaultValue": "Full"
+				"type": "string"
 			},
 			"P_SourceSystem": {
-				"type": "string",
-				"defaultValue": "AdventureWorks"
+				"type": "string"
 			},
 			"P_WatermarkColumn": {
 				"type": "string"
 			},
 			"P_SourceTable": {
-				"type": "string",
-				"defaultValue": "salesperson"
+				"type": "string"
 			},
 			"P_TargetFolder": {
-				"type": "string",
-				"defaultValue": "person/Person.parquet"
+				"type": "string"
 			}
 		},
 		"variables": {

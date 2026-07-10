@@ -236,16 +236,13 @@
 		],
 		"parameters": {
 			"P_LoadType": {
-				"type": "string",
-				"defaultValue": "Full"
+				"type": "string"
 			},
 			"P_PipelineName": {
-				"type": "string",
-				"defaultValue": "PL_Master_Load"
+				"type": "string"
 			},
 			"P_SourceSystem": {
-				"type": "string",
-				"defaultValue": "AdventureWorks"
+				"type": "string"
 			}
 		},
 		"variables": {
