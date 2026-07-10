@@ -1,6 +1,16 @@
 {
 	"name": "ls_SqlServer",
 	"properties": {
+		"parameters": {
+			"schemaname": {
+				"type": "string",
+				"defaultValue": "@dataset().SchemaName"
+			},
+			"tablename": {
+				"type": "string",
+				"defaultValue": "@dataset().TableName"
+			}
+		},
 		"annotations": [],
 		"type": "SqlServer",
 		"typeProperties": {
