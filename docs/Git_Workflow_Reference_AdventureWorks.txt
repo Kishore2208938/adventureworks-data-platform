@@ -1,0 +1,220 @@
+Git Workflow Reference - AdventureWorks Data Platform
+
+Repository:
+https://github.com/Kishore2208938/adventureworks-data-platform
+
+============================================================ 1. FIRST
+TIME SETUP (Already Done)
+============================================================
+
+git init
+
+git branch -M main
+
+git remote add origin
+https://github.com/Kishore2208938/adventureworks-data-platform.git
+
+git add .
+
+git commit -m “feat: initialize enterprise Azure Data Engineering
+monorepo”
+
+git push -u origin main
+
+============================================================ 2. CREATE
+DEVELOP BRANCH (ONE TIME)
+============================================================
+
+git checkout -b develop
+
+git push -u origin develop
+
+============================================================ 3. DAILY
+DEVELOPMENT WORKFLOW
+============================================================
+
+Step 1 - Switch to develop
+
+git checkout develop
+
+git pull origin develop
+
+Step 2 - Create a Feature Branch
+
+git checkout -b feature/sql-framework
+
+Examples
+
+feature/adf-framework feature/adf-pipelines feature/databricks-bronze
+feature/databricks-silver feature/databricks-gold feature/github-actions
+feature/documentation
+
+Step 3 - Make your code changes
+
+Step 4 - Check status
+
+git status
+
+Step 5 - Stage files
+
+git add .
+
+Step 6 - Commit
+
+Examples
+
+git commit -m “feat: add execution log table”
+
+git commit -m “feat: create metadata framework”
+
+git commit -m “feat: add generic copy pipeline”
+
+git commit -m “fix: correct watermark procedure”
+
+git commit -m “docs: update architecture”
+
+Step 7 - Push feature branch
+
+git push -u origin feature/sql-framework
+
+============================================================ 4. MERGE
+FEATURE INTO DEVELOP
+============================================================
+
+git checkout develop
+
+git pull origin develop
+
+git merge feature/sql-framework
+
+git push origin develop
+
+============================================================ 5. DELETE
+FEATURE BRANCH
+============================================================
+
+Local
+
+git branch -d feature/sql-framework
+
+Remote
+
+git push origin –delete feature/sql-framework
+
+============================================================ 6. RELEASE
+TO PRODUCTION
+============================================================
+
+git checkout main
+
+git pull origin main
+
+git merge develop
+
+git push origin main
+
+============================================================ 7. USEFUL
+COMMANDS ============================================================
+
+View status
+
+git status
+
+View branches
+
+git branch
+
+View commit history
+
+git log –oneline
+
+View remote
+
+git remote -v
+
+Pull latest
+
+git pull
+
+Push changes
+
+git push
+
+Switch branch
+
+git checkout develop
+
+Create branch
+
+git checkout -b feature/branch-name
+
+Delete local branch
+
+git branch -d feature/branch-name
+
+Delete remote branch
+
+git push origin –delete feature/branch-name
+
+============================================================ 8. BRANCH
+STRATEGY ============================================================
+
+main | +– develop | +– feature/sql-framework +– feature/adf-framework +–
+feature/adf-pipelines +– feature/databricks-bronze +–
+feature/databricks-silver +– feature/databricks-gold +–
+feature/github-actions +– feature/documentation
+
+============================================================ 9. COMMIT
+MESSAGE STANDARDS
+============================================================
+
+feat: New feature fix: Bug fix docs: Documentation refactor: Refactoring
+style: Formatting only test: Tests chore: Maintenance ci: CI/CD updates
+
+Examples
+
+feat: add metadata configuration tables
+
+feat: implement generic copy pipeline
+
+feat: add bronze ingestion notebook
+
+fix: correct watermark update procedure
+
+docs: add solution architecture
+
+ci: add GitHub Actions deployment workflow
+
+============================================================ 10. PROJECT
+DEVELOPMENT FLOW
+============================================================
+
+develop
+
+↓
+
+feature branch
+
+↓
+
+Commit
+
+↓
+
+Push
+
+↓
+
+Merge into develop
+
+↓
+
+Testing
+
+↓
+
+Merge develop → main
+
+↓
+
+GitHub Actions Deployment (later)
