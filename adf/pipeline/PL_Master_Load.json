@@ -1,0 +1,272 @@
+{
+	"name": "PL_Master_Load",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_Get_Active_Tables",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set ExecutionLogId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderStoredProcedureName": "[metadata].[usp_GetActiveTables]",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ls_SqlServer_FW",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ACT_ForEach_Table",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "ACT_Get_Active_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('ACT_Get_Active_Tables').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 5,
+					"activities": [
+						{
+							"name": "Execute PL_Copy_Data",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "PL_Copy_Table",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"P_SourceSchema": {
+										"value": "@item().sourceschema",
+										"type": "Expression"
+									},
+									"P_SourceTableId": {
+										"value": "@item().SourceTableId",
+										"type": "Expression"
+									},
+									"P_TargetContainer": {
+										"value": "@item().TargetContainer",
+										"type": "Expression"
+									},
+									"P_CompressionType": {
+										"value": "@item().CompressionType",
+										"type": "Expression"
+									},
+									"P_ExecutionLogId": {
+										"value": "@variables('V_ExecutionLogId')",
+										"type": "Expression"
+									},
+									"P_LoadType": {
+										"value": "@pipeline().parameters.P_LoadType",
+										"type": "Expression"
+									},
+									"P_SourceSystem": {
+										"value": "@pipeline().parameters.P_SourceSystem",
+										"type": "Expression"
+									},
+									"P_WatermarkColumn": {
+										"value": "@item().WatermarkColumn",
+										"type": "Expression"
+									},
+									"P_SourceTable": {
+										"value": "@item().sourcetablename",
+										"type": "Expression"
+									},
+									"P_TargetFolder": {
+										"value": "@item().TargetFolder",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Set ExecutionLogId",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ACT_StartPipeline",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "V_ExecutionLogId",
+					"value": {
+						"value": "@int(activity('ACT_StartPipeline').output.firstRow.ExecutionLogID)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ACT_StartPipeline",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderStoredProcedureName": "[logging].[usp_StartPipeline]",
+						"storedProcedureParameters": {
+							"BatchID": {
+								"type": "Int32",
+								"value": null
+							},
+							"ExecutedBy": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().TriggerName",
+									"type": "Expression"
+								}
+							},
+							"PipelineName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.P_PipelineName",
+									"type": "Expression"
+								}
+							},
+							"PipelineRunID": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().RunId",
+									"type": "Expression"
+								}
+							}
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ls_SqlServer_FW",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "ACT_EndPipeline",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "ACT_ForEach_Table",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[logging].[usp_EndPipeline]",
+					"storedProcedureParameters": {
+						"ErrorMessage": {
+							"value": "",
+							"type": "String"
+						},
+						"ExecutionLogID": {
+							"value": "",
+							"type": "Int64"
+						},
+						"ExecutionStatus": {
+							"value": "",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_SqlServer_FW",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"P_LoadType": {
+				"type": "string",
+				"defaultValue": "Full"
+			},
+			"P_PipelineName": {
+				"type": "string",
+				"defaultValue": "PL_Master_Load"
+			},
+			"P_SourceSystem": {
+				"type": "string",
+				"defaultValue": "AdventureWorks"
+			}
+		},
+		"variables": {
+			"V_ExecutionLogId": {
+				"type": "Integer"
+			},
+			"V_BatchId": {
+				"type": "Integer"
+			},
+			"V_ExecutedBy": {
+				"type": "String"
+			},
+			"V_PipelineRunId": {
+				"type": "String"
+			},
+			"V_Status": {
+				"type": "String"
+			},
+			"V_ErrorMessage": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}

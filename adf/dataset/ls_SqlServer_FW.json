@@ -1,0 +1,12 @@
+{
+	"name": "ls_SqlServer_FW",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_SqlServer_FW",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": []
+	}
+}

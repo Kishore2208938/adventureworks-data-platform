@@ -1,0 +1,65 @@
+{
+	"name": "PL_Update_Watermark",
+	"properties": {
+		"activities": [
+			{
+				"name": "Act_UpdateWatermark",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[control].[usp_UpdateWatermark]",
+					"storedProcedureParameters": {
+						"RunStatus": {
+							"value": {
+								"value": "@pipeline().parameters.P_Status",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"SourceTableID": {
+							"value": {
+								"value": "@pipeline().parameters.P_SourceTableId",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						},
+						"WatermarkValue": {
+							"value": {
+								"value": "@pipeline().parameters.P_Watermark",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_SqlServer_FW",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"P_SourceTableId": {
+				"type": "string",
+				"defaultValue": "1"
+			},
+			"P_Watermark": {
+				"type": "string",
+				"defaultValue": "21.33"
+			},
+			"P_Status": {
+				"type": "string",
+				"defaultValue": "completed"
+			}
+		},
+		"annotations": []
+	}
+}

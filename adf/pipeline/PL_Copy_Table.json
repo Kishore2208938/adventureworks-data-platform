@@ -1,0 +1,390 @@
+{
+	"name": "PL_Copy_Table",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_Copy_SQL_To_ADLS",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "If Condition",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderQuery": {
+							"value": "@variables('V_SQLQuery')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_SQL_Generic",
+						"type": "DatasetReference",
+						"parameters": {
+							"schemaname": {
+								"value": "@pipeline().parameters.P_SourceSchema",
+								"type": "Expression"
+							},
+							"tablename": {
+								"value": "@pipeline().parameters.P_SourceTable",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_Parquet",
+						"type": "DatasetReference",
+						"parameters": {
+							"folderpath": {
+								"value": "@pipeline().parameters.P_TargetContainer",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@pipeline().parameters.P_TargetFolder",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "ACT_GetWatermark",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[control].[usp_GetWatermark]",
+					"storedProcedureParameters": {
+						"SourceTableID": {
+							"value": {
+								"value": "@pipeline().parameters.P_SourceTableId",
+								"type": "Expression"
+							},
+							"type": "Int16"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_SqlServer_FW",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "If Condition",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "ACT_GetWatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.P_LoadType, 'Full')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "ACT_BuildSQLQuery_Inc",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_SQLQuery",
+								"value": {
+									"value": "SELECT *\nFROM [@{pipeline().parameters.P_SourceSchema}].[@{pipeline().parameters.P_SourceTable}]\nWHERE [@{pipeline().parameters.P_WatermarkColumn}] > '@{variables('V_LastWatermark')}'",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "ACT_BuildSQLQuery_Full",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "V_SQLQuery",
+								"value": {
+									"value": "SELECT *\nFROM [@{pipeline().parameters.P_SourceSchema}].[@{pipeline().parameters.P_SourceTable}]",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Act_Rowcount",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ACT_Copy_SQL_To_ADLS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "V_RowCount",
+					"value": {
+						"value": "@activity('ACT_Copy_SQL_To_ADLS').output.RowsCopied",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ACT_LogExecutionDetail",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Act_Rowcount",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[logging].[usp_LogExecutionDetail]",
+					"storedProcedureParameters": {
+						"ErrorMessage": {
+							"value": {
+								"value": "@activity('ACT_Copy_SQL_To_ADLS').output.errors",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ExecutionLogID": {
+							"value": "1",
+							"type": "Int64"
+						},
+						"ExecutionStatus": {
+							"value": {
+								"value": "@activity('ACT_Copy_SQL_To_ADLS').Status",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"LayerName": {
+							"value": "ADF",
+							"type": "String"
+						},
+						"NotebookName": {
+							"value": null,
+							"type": "String"
+						},
+						"PipelineName": {
+							"value": {
+								"value": "@pipeline().Pipeline",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"RowsDeleted": {
+							"value": null,
+							"type": "Int64"
+						},
+						"RowsInserted": {
+							"value": null,
+							"type": "Int64"
+						},
+						"RowsRead": {
+							"value": {
+								"value": "@activity('ACT_Copy_SQL_To_ADLS').output.rowsRead",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"RowsRejected": {
+							"value": null,
+							"type": "Int64"
+						},
+						"RowsUpdated": {
+							"value": {
+								"value": "@activity('ACT_Copy_SQL_To_ADLS').output.rowsCopied",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"SourceTableID": {
+							"value": {
+								"value": "@pipeline().parameters.P_SourceTableId",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_SqlServer_FW",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Execute UpdateWatermark Pipeline",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ACT_LogExecutionDetail",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_Update_Watermark",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"P_SourceTableId": {
+							"value": "@pipeline().parameters.P_SourceTableId",
+							"type": "Expression"
+						},
+						"P_Watermark": {
+							"value": "@utcNow()",
+							"type": "Expression"
+						},
+						"P_Status": {
+							"value": "@activity('ACT_LogExecutionDetail').Status",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"P_SourceSchema": {
+				"type": "string",
+				"defaultValue": "sales"
+			},
+			"P_SourceTableId": {
+				"type": "int",
+				"defaultValue": 6
+			},
+			"P_TargetContainer": {
+				"type": "string",
+				"defaultValue": "data/raw/"
+			},
+			"P_CompressionType": {
+				"type": "string"
+			},
+			"P_ExecutionLogId": {
+				"type": "string"
+			},
+			"P_LoadType": {
+				"type": "string",
+				"defaultValue": "Full"
+			},
+			"P_SourceSystem": {
+				"type": "string",
+				"defaultValue": "AdventureWorks"
+			},
+			"P_WatermarkColumn": {
+				"type": "string"
+			},
+			"P_SourceTable": {
+				"type": "string",
+				"defaultValue": "salesperson"
+			},
+			"P_TargetFolder": {
+				"type": "string",
+				"defaultValue": "person/Person.parquet"
+			}
+		},
+		"variables": {
+			"V_SQLQuery": {
+				"type": "String"
+			},
+			"V_LastWatermark": {
+				"type": "String"
+			},
+			"V_RowCount": {
+				"type": "Integer"
+			},
+			"V_Status": {
+				"type": "String"
+			},
+			"V_Error": {
+				"type": "String"
+			},
+			"V_CurrentWatermark": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}
