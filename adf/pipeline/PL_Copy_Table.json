@@ -326,6 +326,7 @@
 				}
 			}
 		],
+		"concurrency": 6,
 		"parameters": {
 			"P_SourceSchema": {
 				"type": "string"
