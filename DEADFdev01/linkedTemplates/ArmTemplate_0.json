@@ -1,0 +1,1016 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "DEADFdev01"
+		},
+		"LS_ADLS_GEN2_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'LS_ADLS_GEN2'"
+		},
+		"LS_ADLS_GEN2_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://deadlsdev01.dfs.core.windows.net/"
+		},
+		"ls_AzureKeyVault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://DEkvPassword.vault.azure.net/"
+		},
+		"integrationRuntime1_properties_typeProperties_linkedInfo_resourceId": {
+			"type": "string",
+			"defaultValue": "/subscriptions/e156384c-6302-43fc-b4aa-3e78e0d08c80/resourcegroups/rg_dev/providers/Microsoft.DataFactory/factories/kkadvdevadf/integrationruntimes/SelfhostedintegrationRuntime"
+		},
+		"ls_SqlServer_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "DESKTOP-IEPVL3O"
+		},
+		"ls_SqlServer_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "AdventureWorks2016"
+		},
+		"ls_SqlServer_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "kkadmin"
+		},
+		"ls_SqlServer_FW_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "DESKTOP-IEPVL3O"
+		},
+		"ls_SqlServer_FW_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "AW_ETL_Framework"
+		},
+		"ls_SqlServer_FW_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "kkadmin"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ADLS_GEN2')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('LS_ADLS_GEN2_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('LS_ADLS_GEN2_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_AzureKeyVault')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('ls_AzureKeyVault_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/integrationRuntime1')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {
+					"linkedInfo": {
+						"resourceId": "[parameters('integrationRuntime1_properties_typeProperties_linkedInfo_resourceId')]",
+						"authorizationType": "Rbac"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_ADLS_Parquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS_GEN2",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"folderpath": {
+						"type": "string"
+					},
+					"filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().folderpath",
+							"type": "Expression"
+						}
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADLS_GEN2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_SqlServer')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "SqlServer",
+				"typeProperties": {
+					"server": "[parameters('ls_SqlServer_properties_typeProperties_server')]",
+					"database": "[parameters('ls_SqlServer_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('ls_SqlServer_properties_typeProperties_userName')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "ls_AzureKeyVault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "onpremsqlserver"
+					}
+				},
+				"connectVia": {
+					"referenceName": "integrationRuntime1",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/integrationRuntime1')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_AzureKeyVault')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_SqlServer_FW')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "SqlServer",
+				"typeProperties": {
+					"server": "[parameters('ls_SqlServer_FW_properties_typeProperties_server')]",
+					"database": "[parameters('ls_SqlServer_FW_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('ls_SqlServer_FW_properties_typeProperties_userName')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "ls_AzureKeyVault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "onpremsqlserver"
+					}
+				},
+				"connectVia": {
+					"referenceName": "integrationRuntime1",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/integrationRuntime1')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_AzureKeyVault')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Update_Watermark')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Act_UpdateWatermark",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[control].[usp_UpdateWatermark]",
+							"storedProcedureParameters": {
+								"RunStatus": {
+									"value": {
+										"value": "@pipeline().parameters.P_Status",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"SourceTableID": {
+									"value": {
+										"value": "@pipeline().parameters.P_SourceTableId",
+										"type": "Expression"
+									},
+									"type": "Int32"
+								},
+								"WatermarkValue": {
+									"value": {
+										"value": "@pipeline().parameters.P_Watermark",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_SqlServer_FW",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"P_SourceTableId": {
+						"type": "string"
+					},
+					"P_Watermark": {
+						"type": "string"
+					},
+					"P_Status": {
+						"type": "string"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_SqlServer_FW')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SQL_Generic')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_SqlServer",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"schemaname": {
+						"type": "string"
+					},
+					"tablename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schemaname",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().tablename",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_SqlServer')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_SqlServer_FW')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_SqlServer_FW",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_SqlServer_FW')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Copy_Table')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ACT_Copy_SQL_To_ADLS",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "If Condition",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": {
+									"value": "@variables('V_SQLQuery')",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_SQL_Generic",
+								"type": "DatasetReference",
+								"parameters": {
+									"schemaname": {
+										"value": "@pipeline().parameters.P_SourceSchema",
+										"type": "Expression"
+									},
+									"tablename": {
+										"value": "@pipeline().parameters.P_SourceTable",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_Parquet",
+								"type": "DatasetReference",
+								"parameters": {
+									"folderpath": {
+										"value": "@concat(\n'data/raw/',\npipeline().parameters.P_TargetFolder\n)",
+										"type": "Expression"
+									},
+									"filename": {
+										"value": "@concat(\npipeline().parameters.P_SourceTable,\n'.parquet'\n)",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					},
+					{
+						"name": "ACT_GetWatermark",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[control].[usp_GetWatermark]",
+							"storedProcedureParameters": {
+								"SourceTableID": {
+									"value": {
+										"value": "@pipeline().parameters.P_SourceTableId",
+										"type": "Expression"
+									},
+									"type": "Int16"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_SqlServer_FW",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "If Condition",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "ACT_GetWatermark",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(pipeline().parameters.P_LoadType, 'Full')",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "ACT_BuildSQLQuery_Inc",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SQLQuery",
+										"value": {
+											"value": "SELECT *\nFROM [@{pipeline().parameters.P_SourceSchema}].[@{pipeline().parameters.P_SourceTable}]\nWHERE [@{pipeline().parameters.P_WatermarkColumn}] > '@{variables('V_LastWatermark')}'",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "ACT_BuildSQLQuery_Full",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "V_SQLQuery",
+										"value": {
+											"value": "SELECT *\nFROM [@{pipeline().parameters.P_SourceSchema}].[@{pipeline().parameters.P_SourceTable}]",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Act_Rowcount",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "ACT_Copy_SQL_To_ADLS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "V_RowCount",
+							"value": {
+								"value": "@activity('ACT_Copy_SQL_To_ADLS').output.RowsCopied",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "ACT_LogExecutionDetail",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "Act_Rowcount",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[logging].[usp_LogExecutionDetail]",
+							"storedProcedureParameters": {
+								"ErrorMessage": {
+									"value": {
+										"value": "@activity('ACT_Copy_SQL_To_ADLS').output.errors",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ExecutionLogID": {
+									"value": "1",
+									"type": "Int64"
+								},
+								"ExecutionStatus": {
+									"value": {
+										"value": "@activity('ACT_Copy_SQL_To_ADLS').Status",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"LayerName": {
+									"value": "ADF",
+									"type": "String"
+								},
+								"NotebookName": {
+									"value": null,
+									"type": "String"
+								},
+								"PipelineName": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"RowsDeleted": {
+									"value": null,
+									"type": "Int64"
+								},
+								"RowsInserted": {
+									"value": null,
+									"type": "Int64"
+								},
+								"RowsRead": {
+									"value": {
+										"value": "@activity('ACT_Copy_SQL_To_ADLS').output.rowsRead",
+										"type": "Expression"
+									},
+									"type": "Int64"
+								},
+								"RowsRejected": {
+									"value": null,
+									"type": "Int64"
+								},
+								"RowsUpdated": {
+									"value": {
+										"value": "@activity('ACT_Copy_SQL_To_ADLS').output.rowsCopied",
+										"type": "Expression"
+									},
+									"type": "Int64"
+								},
+								"SourceTableID": {
+									"value": {
+										"value": "@pipeline().parameters.P_SourceTableId",
+										"type": "Expression"
+									},
+									"type": "Int32"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_SqlServer_FW",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Execute UpdateWatermark Pipeline",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ACT_LogExecutionDetail",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_Update_Watermark",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"P_SourceTableId": {
+									"value": "@pipeline().parameters.P_SourceTableId",
+									"type": "Expression"
+								},
+								"P_Watermark": {
+									"value": "@utcNow()",
+									"type": "Expression"
+								},
+								"P_Status": {
+									"value": "@activity('ACT_LogExecutionDetail').Status",
+									"type": "Expression"
+								}
+							}
+						}
+					}
+				],
+				"concurrency": 6,
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"P_SourceSchema": {
+						"type": "string"
+					},
+					"P_SourceTableId": {
+						"type": "int"
+					},
+					"P_TargetContainer": {
+						"type": "string"
+					},
+					"P_CompressionType": {
+						"type": "string"
+					},
+					"P_ExecutionLogId": {
+						"type": "string"
+					},
+					"P_LoadType": {
+						"type": "string"
+					},
+					"P_SourceSystem": {
+						"type": "string"
+					},
+					"P_WatermarkColumn": {
+						"type": "string"
+					},
+					"P_SourceTable": {
+						"type": "string"
+					},
+					"P_TargetFolder": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"V_SQLQuery": {
+						"type": "String"
+					},
+					"V_LastWatermark": {
+						"type": "String"
+					},
+					"V_RowCount": {
+						"type": "Integer"
+					},
+					"V_Status": {
+						"type": "String"
+					},
+					"V_Error": {
+						"type": "String"
+					},
+					"V_CurrentWatermark": {
+						"type": "String"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_SQL_Generic')]",
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Parquet')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_SqlServer_FW')]",
+				"[concat(variables('factoryId'), '/pipelines/PL_Update_Watermark')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Master_Load')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ACT_Get_Active_Tables",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Set ExecutionLogId",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderStoredProcedureName": "[[metadata].[usp_GetActiveTables]",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ls_SqlServer_FW",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ACT_ForEach_Table",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "ACT_Get_Active_Tables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('ACT_Get_Active_Tables').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"batchCount": 6,
+							"activities": [
+								{
+									"name": "Execute PL_Copy_Data",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"policy": {
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PL_Copy_Table",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": false,
+										"parameters": {
+											"P_SourceSchema": {
+												"value": "@item().sourceschema",
+												"type": "Expression"
+											},
+											"P_SourceTableId": {
+												"value": "@item().SourceTableId",
+												"type": "Expression"
+											},
+											"P_TargetContainer": {
+												"value": "@item().TargetContainer",
+												"type": "Expression"
+											},
+											"P_CompressionType": {
+												"value": "@item().CompressionType",
+												"type": "Expression"
+											},
+											"P_ExecutionLogId": {
+												"value": "@variables('V_ExecutionLogId')",
+												"type": "Expression"
+											},
+											"P_LoadType": {
+												"value": "@pipeline().parameters.P_LoadType",
+												"type": "Expression"
+											},
+											"P_SourceSystem": {
+												"value": "@pipeline().parameters.P_SourceSystem",
+												"type": "Expression"
+											},
+											"P_WatermarkColumn": {
+												"value": "@item().WatermarkColumn",
+												"type": "Expression"
+											},
+											"P_SourceTable": {
+												"value": "@item().sourcetablename",
+												"type": "Expression"
+											},
+											"P_TargetFolder": {
+												"value": "@item().TargetFolder",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Set ExecutionLogId",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "ACT_StartPipeline",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "V_ExecutionLogId",
+							"value": {
+								"value": "@int(activity('ACT_StartPipeline').output.firstRow.ExecutionLogID)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "ACT_StartPipeline",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderStoredProcedureName": "[[logging].[usp_StartPipeline]",
+								"storedProcedureParameters": {
+									"BatchID": {
+										"type": "Int32",
+										"value": null
+									},
+									"ExecutedBy": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().TriggerName",
+											"type": "Expression"
+										}
+									},
+									"PipelineName": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.P_PipelineName",
+											"type": "Expression"
+										}
+									},
+									"PipelineRunID": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().RunId",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "ls_SqlServer_FW",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "ACT_EndPipeline",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "ACT_ForEach_Table",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[logging].[usp_EndPipeline]",
+							"storedProcedureParameters": {
+								"ErrorMessage": {
+									"value": null,
+									"type": "String"
+								},
+								"ExecutionLogID": {
+									"value": {
+										"value": "@variables('V_ExecutionLogId')",
+										"type": "Expression"
+									},
+									"type": "Int64"
+								},
+								"ExecutionStatus": {
+									"value": {
+										"value": "@'Success'",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_SqlServer_FW",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"concurrency": 6,
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"P_LoadType": {
+						"type": "string",
+						"defaultValue": "full"
+					},
+					"P_PipelineName": {
+						"type": "string",
+						"defaultValue": "generic"
+					},
+					"P_SourceSystem": {
+						"type": "string",
+						"defaultValue": "ADV"
+					}
+				},
+				"variables": {
+					"V_ExecutionLogId": {
+						"type": "Integer"
+					},
+					"V_BatchId": {
+						"type": "Integer"
+					},
+					"V_ExecutedBy": {
+						"type": "String"
+					},
+					"V_PipelineRunId": {
+						"type": "String"
+					},
+					"V_Status": {
+						"type": "String"
+					},
+					"V_ErrorMessage": {
+						"type": "String"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ls_SqlServer_FW')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_SqlServer_FW')]",
+				"[concat(variables('factoryId'), '/pipelines/PL_Copy_Table')]"
+			]
+		}
+	]
+}
