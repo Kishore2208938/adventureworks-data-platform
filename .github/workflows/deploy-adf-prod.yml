@@ -40,7 +40,7 @@ jobs:
       with:
         resourceGroupName: ${{ secrets.RESOURCE_GROUP }}
         template: DEADFdev01/ARMTemplateForFactory.json
-        parameters: DEADFdev01/ARMTemplateParametersForFactory.json
+        parameters: deployment/prod.parameters.json
 
     - name: Start Triggers
       shell: pwsh
