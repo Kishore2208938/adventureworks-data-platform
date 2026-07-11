@@ -1,11 +1,15 @@
 {
-  "factoryName": {
-    "value": "DEADFPROD01"
-  },
-  "lS_ADLS_GEN2_properties_typeProperties_url": {
-    "value": "https://deadlsdev01.dfs.core.windows.net/"
-  },
-  "ls_AzureKeyVault_properties_typeProperties_baseUrl": {
-    "value": "https://DEkvPassword.vault.azure.net/"
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "factoryName": {
+      "value": "DEADFPROD01"
+    },
+    "lS_ADLS_GEN2_properties_typeProperties_url": {
+      "value": "https://deadlsdev01.dfs.core.windows.net/"
+    },
+    "ls_AzureKeyVault_properties_typeProperties_baseUrl": {
+      "value": "https://DEkvPassword.vault.azure.net/"
+    }
   }
 }
