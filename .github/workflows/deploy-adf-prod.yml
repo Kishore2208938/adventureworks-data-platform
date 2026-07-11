@@ -30,6 +30,7 @@ jobs:
         ./.github/scripts/PrePostDeploymentScript.ps1 `
         -armTemplate "DEADFdev01/ARMTemplateForFactory.json" `
         -ArmTemplateParameters "DEADFdev01/ARMTemplateParametersForFactory.json"`
+        -ArmTemplateParameters "DEADFdev01/ARMTemplateParametersForFactory.json"`
         -ResourceGroupName "${{ secrets.RESOURCE_GROUP }}" `
         -DataFactoryName "${{ secrets.DATAFACTORY_NAME }}" `
         -predeployment $true `
