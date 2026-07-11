@@ -1,6 +1,6 @@
 {
   "factoryName": {
-    "value": "DEADVPROD01"
+    "value": "DEADFPROD01"
   },
   "lS_ADLS_GEN2_properties_typeProperties_url": {
     "value": "https://deadlsdev01.dfs.core.windows.net/"
