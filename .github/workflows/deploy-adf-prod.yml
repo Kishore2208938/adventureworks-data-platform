@@ -23,7 +23,7 @@ jobs:
       uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+        enable-AzPSSession: true
     - name: Stop Triggers
       shell: pwsh
       run: |
