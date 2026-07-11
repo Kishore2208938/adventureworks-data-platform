@@ -1,11 +1,11 @@
 {
   "factoryName": {
-    "value": "YOUR_PROD_FACTORY_NAME"
+    "value": "DEADFDEV01"
   },
   "lS_ADLS_GEN2_properties_typeProperties_url": {
-    "value": "https://yourprodstorage.dfs.core.windows.net/"
+    "value": "https://deadlsdev01.dfs.core.windows.net/"
   },
   "ls_AzureKeyVault_properties_typeProperties_baseUrl": {
-    "value": "https://yourprodkeyvault.vault.azure.net/"
+    "value": "https://DEkvPassword.vault.azure.net/"
   }
 }
