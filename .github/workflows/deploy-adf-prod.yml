@@ -23,6 +23,13 @@ jobs:
       uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Enable Azure PowerShell Session
+      uses: azure/powershell@v2
+      with:
+        inlineScript: |
+          Get-AzContext
+        azPSVersion: "latest"
 
     - name: Stop Triggers
       shell: pwsh
