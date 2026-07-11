@@ -1,15 +1,39 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-    "factoryName": {
-      "value": "DEADFPROD01"
-    },
-    "lS_ADLS_GEN2_properties_typeProperties_url": {
-      "value": "https://deadlsdev01.dfs.core.windows.net/"
-    },
-    "ls_AzureKeyVault_properties_typeProperties_baseUrl": {
-      "value": "https://DEkvPassword.vault.azure.net/"
-    }
-  }
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "DEADFPROD01"
+		},
+		"LS_ADLS_GEN2_accountKey": {
+			"value": ""
+		},
+		"LS_ADLS_GEN2_properties_typeProperties_url": {
+			"value": "https://deadlsdev01.dfs.core.windows.net/"
+		},
+		"ls_AzureKeyVault_properties_typeProperties_baseUrl": {
+			"value": "https://DEkvPassword.vault.azure.net/"
+		},
+		"ls_SqlServer_properties_typeProperties_server": {
+			"value": "DESKTOP-IEPVL3O"
+		},
+		"ls_SqlServer_properties_typeProperties_database": {
+			"value": "AdventureWorks2016"
+		},
+		"ls_SqlServer_properties_typeProperties_userName": {
+			"value": "kkadmin"
+		},
+		"ls_SqlServer_FW_properties_typeProperties_server": {
+			"value": "DESKTOP-IEPVL3O"
+		},
+		"ls_SqlServer_FW_properties_typeProperties_database": {
+			"value": "AW_ETL_Framework"
+		},
+		"ls_SqlServer_FW_properties_typeProperties_userName": {
+			"value": "kkadmin"
+		},
+		"integrationRuntime1_properties_typeProperties_linkedInfo_resourceId": {
+			"value": "/subscriptions/e156384c-6302-43fc-b4aa-3e78e0d08c80/resourcegroups/rg_dev/providers/Microsoft.DataFactory/factories/kkadvdevadf/integrationruntimes/SelfhostedintegrationRuntime"
+		}
+	}
 }
