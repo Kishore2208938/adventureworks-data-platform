@@ -1,0 +1,11 @@
+{
+  "factoryName": {
+    "value": "YOUR_PROD_FACTORY_NAME"
+  },
+  "lS_ADLS_GEN2_properties_typeProperties_url": {
+    "value": "https://yourprodstorage.dfs.core.windows.net/"
+  },
+  "ls_AzureKeyVault_properties_typeProperties_baseUrl": {
+    "value": "https://yourprodkeyvault.vault.azure.net/"
+  }
+}
