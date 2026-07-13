@@ -33,12 +33,12 @@ jobs:
         run: databricks bundle validate -t dev
 
   # ---------------------------------------------------------------------
-  # Deploy to dev: push to develop branch, or manual dispatch
+  # Deploy to dev: push to main branch, or manual dispatch
   # ---------------------------------------------------------------------
   deploy-dev:
     needs: validate
     if: >
-      (github.ref == 'refs/heads/develop' && github.event_name == 'push') ||
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'dev')
     runs-on: ubuntu-latest
     environment: dev
@@ -65,26 +65,26 @@ jobs:
   # ---------------------------------------------------------------------
   # Deploy to prod: push to main only, or manual dispatch
   # ---------------------------------------------------------------------
-  deploy-prod:
-    needs: validate
-    if: >
-      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'prod')
-    runs-on: ubuntu-latest
-    environment: prod
-    steps:
-      - uses: actions/checkout@v4
+  # deploy-prod:
+  #   needs: validate
+  #   if: >
+  #     (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+  #     (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'prod')
+  #   runs-on: ubuntu-latest
+  #   environment: prod
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: databricks/setup-cli@main
+  #     - uses: databricks/setup-cli@main
 
-      - name: Deploy bundle to prod
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
-        run: |
-          databricks bundle deploy -t prod \
-            --var="warehouse_id=${{ secrets.WAREHOUSE_ID_PROD }}" \
-            --var="job_notification_email=${{ secrets.NOTIFY_EMAIL }}"
+  #     - name: Deploy bundle to prod
+  #       env:
+  #         DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
+  #         DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
+  #       run: |
+  #         databricks bundle deploy -t prod \
+  #           --var="warehouse_id=${{ secrets.WAREHOUSE_ID_PROD }}" \
+  #           --var="job_notification_email=${{ secrets.NOTIFY_EMAIL }}"
 
         # Note: prod is NOT run automatically here - it deploys with the
         # cron UNPAUSED (see resources/aw_lakehouse_job.yml), but won't

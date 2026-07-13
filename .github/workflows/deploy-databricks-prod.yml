@@ -3,7 +3,7 @@ name: Databricks Bundle CI/CD
 on:
   push:
     branches:
-      - develop
+      # - develop
       - main
     paths:
       - 'databricks/**'
@@ -11,7 +11,7 @@ on:
   pull_request:
     branches:
       - develop
-      - main
+      # - main
     paths:
       - 'databricks/**'
 
@@ -40,7 +40,7 @@ jobs:
 
   deploy-dev:
 
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     needs: validate
 
@@ -79,34 +79,34 @@ jobs:
       #   run: |
       #     databricks bundle run pl_master_load -t dev
 
-  deploy-prod:
+  # deploy-prod:
 
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
-    needs: validate
+  #   needs: validate
 
-    runs-on: ubuntu-latest
+  #   runs-on: ubuntu-latest
 
-    environment: prod
+  #   environment: prod
 
-    defaults:
-      run:
-        working-directory: databricks
+  #   defaults:
+  #     run:
+  #       working-directory: databricks
 
-    steps:
+  #   steps:
 
-      - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v4
 
-      - uses: databricks/setup-cli@main
+  #     - uses: databricks/setup-cli@main
 
-      - name: Deploy PROD
+  #     - name: Deploy PROD
 
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
+  #       env:
+  #         DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
+  #         DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
 
-        run: |
+  #       run: |
 
-          databricks bundle deploy -t prod \
-          --var="warehouse_id=${{ secrets.WAREHOUSE_ID_PROD }}" \
-          --var="job_notification_email=${{ secrets.NOTIFY_EMAIL }}"
+  #         databricks bundle deploy -t prod \
+  #         --var="warehouse_id=${{ secrets.WAREHOUSE_ID_PROD }}" \
+  #         --var="job_notification_email=${{ secrets.NOTIFY_EMAIL }}"
