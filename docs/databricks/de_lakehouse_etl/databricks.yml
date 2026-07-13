@@ -1,0 +1,60 @@
+bundle:
+  name: de_lakehouse_etl
+
+# ---------------------------------------------------------------------------
+# Variables - overridden per target below, or via --var on the CLI (used by
+# the GitHub Actions workflow to inject secrets at deploy time).
+# ---------------------------------------------------------------------------
+variables:
+  catalog_name:
+    description: Unity Catalog catalog this environment writes to
+    default: de_lakehouse
+
+  warehouse_id:
+    description: SQL warehouse ID used for the setup_unity_catalog SQL task
+    default: ""
+
+  job_notification_email:
+    description: Email address notified on job failure
+    default: ""
+
+  node_type_id:
+    description: Cluster node type for job compute
+    default: Standard_DS3_v2
+
+include:
+  - resources/*.yml
+
+# ---------------------------------------------------------------------------
+# Targets
+# NOTE: workspace.host is intentionally NOT set here - the Databricks CLI
+# does not support variable interpolation for auth fields (host/token).
+# Host is resolved automatically from:
+#   - your local profile (created via `databricks auth login`), or
+#   - the DATABRICKS_HOST env var (used in CI - see .github/workflows/deploy.yml)
+# ---------------------------------------------------------------------------
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/dev
+    variables:
+      catalog_name: de_lakehouse_dev
+    resources:
+      jobs:
+        pl_master_load:
+          schedule:
+            pause_status: PAUSED   # dev never runs on a schedule, PR/manual only
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/prod
+    variables:
+      catalog_name: de_lakehouse
+    resources:
+      jobs:
+        pl_master_load:
+          schedule:
+            pause_status: UNPAUSED   # prod runs on the cron in resources/aw_lakehouse_job.yml

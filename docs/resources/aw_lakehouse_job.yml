@@ -1,0 +1,64 @@
+resources:
+  jobs:
+    pl_master_load:
+      name: "PL_Master_Load [${bundle.target}]"
+      tags:
+        project: de_lakehouse_etl
+        target: ${bundle.target}
+
+      email_notifications:
+        on_failure:
+          - ${var.job_notification_email}
+
+      # Databricks Free Edition: serverless compute only. No job_clusters /
+      # new_cluster block - tasks below simply omit a cluster reference,
+      # which routes them to serverless automatically.
+
+      # ---- ADF equivalence: ACT_StartPipeline -> Get_Active_Tables -> ForEach -> EndPipeline ----
+      tasks:
+        - task_key: setup_unity_catalog
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/00_setup_unity_catalog.sql
+
+        - task_key: seed_metadata
+          depends_on:
+            - task_key: setup_unity_catalog
+          notebook_task:
+            notebook_path: ../src/01_seed_metadata.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+
+        - task_key: bronze_ingestion
+          depends_on:
+            - task_key: seed_metadata
+          notebook_task:
+            notebook_path: ../src/02_bronze_ingestion.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              pipeline_name: PL_Bronze_Load
+
+        - task_key: silver_transform
+          depends_on:
+            - task_key: bronze_ingestion
+          notebook_task:
+            notebook_path: ../src/03_silver_transform.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              pipeline_name: PL_Silver_Load
+
+        - task_key: gold_dimensional
+          depends_on:
+            - task_key: silver_transform
+          notebook_task:
+            notebook_path: ../src/04_gold_dimensional.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+
+      # Default: daily 03:00 UTC. Overridden per-target in databricks.yml
+      # (paused in dev, active in prod).
+      schedule:
+        quartz_cron_expression: "0 0 3 * * ?"
+        timezone_id: UTC
+        pause_status: PAUSED
