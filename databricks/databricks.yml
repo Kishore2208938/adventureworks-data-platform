@@ -57,4 +57,4 @@ targets:
       jobs:
         pl_master_load:
           schedule:
-            pause_status: UNPAUSED   # prod runs on the cron in resources/aw_lakehouse_job.yml
+            pause_status: PAUSED   # prod runs on the cron in resources/aw_lakehouse_job.yml

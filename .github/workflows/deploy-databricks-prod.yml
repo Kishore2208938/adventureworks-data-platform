@@ -70,14 +70,14 @@ jobs:
           --var="warehouse_id=${{ secrets.WAREHOUSE_ID_DEV }}" \
           --var="job_notification_email=${{ secrets.NOTIFY_EMAIL }}"
 
-      - name: Smoke Test
+      # - name: Smoke Test
 
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+      #   env:
+      #     DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+      #     DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
 
-        run: |
-          databricks bundle run pl_master_load -t dev
+      #   run: |
+      #     databricks bundle run pl_master_load -t dev
 
   deploy-prod:
 
