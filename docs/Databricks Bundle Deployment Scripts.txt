@@ -1,0 +1,91 @@
+Good — this is your actual working code, with the schema-explicit fixes and debug prints you added since we last spoke. I'll sync the bundle's `src/` folder to match this exactly (not my older version), drop the stray scratch query file, and rename `01_seed_metadata2.py` → `01_seed_metadata.py` for a clean bundle.Bundle synced with your real working code. One thing to flag from the diff: your current `00_setup_unity_catalog.sql` ends with a leftover debug `SELECT ... FROM metadata.table_load_configuration` query appended after the DDL — harmless when run as a `sql_task` (just returns a result set nobody looks at), but worth trimming later for cleanliness. I left it as-is since you said "use the latest working code."
+
+## Step-by-step: build & deploy the bundle
+
+### 1. Unzip and turn it into a git repo
+```bash
+unzip de_lakehouse_etl.zip
+cd de_lakehouse_etl
+git init
+git add .
+git commit -m "Initial bundle: synced from working Databricks notebooks"
+git branch -M main
+git checkout -b develop
+```
+
+### 2. Install the Databricks CLI (if not already)
+```bash
+curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+databricks --version   # confirm it installed
+```
+
+### 3. Authenticate locally
+```bash
+databricks auth login --host https://<your-workspace-url>.cloud.databricks.com
+```
+This opens a browser, logs in, and stores a local profile — used only for testing from your machine, not by CI.
+
+### 4. Get the two values the bundle needs as variables
+- **Warehouse ID**: Databricks UI → **SQL Warehouses** → click your serverless warehouse → copy the ID from the connection details.
+- **Workspace host**: the same URL from step 3.
+
+### 5. Validate the bundle
+```bash
+databricks bundle validate -t dev \
+  --var="databricks_host=https://<your-workspace-url>" \
+  --var="warehouse_id=<your-warehouse-id>"
+```
+This just checks the YAML is well-formed and references real files — no deployment yet. Fix anything it flags before continuing.
+
+### 6. Deploy to your workspace
+```bash
+databricks bundle deploy -t dev \
+  --var="databricks_host=https://<your-workspace-url>" \
+  --var="warehouse_id=<your-warehouse-id>"
+```
+This uploads `src/*.py`/`*.sql` into `/Workspace/Users/<you>/.bundle/de_lakehouse_etl/dev/` and creates a **Workflow** named `PL_Master_Load [dev]` — go check **Workflows** in the sidebar, it should now exist with 5 tasks wired in order.
+
+### 7. Run it end-to-end
+```bash
+databricks bundle run pl_master_load -t dev
+```
+Watch it in the UI, or `databricks bundle run` will stream status to your terminal. Confirm `bronze`/`silver`/`gold` tables populated as expected.
+
+### 8. Push to GitHub and wire up CI/CD
+```bash
+git remote add origin https://github.com/<you>/de_lakehouse_etl.git
+git push -u origin main
+git push -u origin develop
+```
+
+### 9. GitHub repo setup (one-time)
+- **Settings → Environments** → create `dev` and `prod`
+- **Settings → Secrets and variables → Actions** (or per-environment) → add:
+
+| Secret | Value |
+|---|---|
+| `DATABRICKS_HOST_DEV` / `DATABRICKS_HOST_PROD` | your workspace URL (same value both — Free Edition, one workspace) |
+| `DATABRICKS_TOKEN_DEV` / `DATABRICKS_TOKEN_PROD` | PAT from Databricks **Settings → Developer → Access tokens** |
+| `WAREHOUSE_ID_DEV` / `WAREHOUSE_ID_PROD` | your warehouse ID (same value both) |
+| `NOTIFY_EMAIL` | your email |
+
+### 10. Trigger the pipeline via CI
+```bash
+git checkout develop
+git commit --allow-empty -m "trigger dev deploy"
+git push
+```
+Watch the **Actions** tab: `validate` → `deploy-dev` → smoke-test run of `PL_Master_Load [dev]`.
+
+### 11. Promote to prod
+```bash
+git checkout main
+git merge develop
+git push
+```
+Deploys `PL_Master_Load [prod]` writing to your real `de_lakehouse` catalog. It won't auto-run on schedule unless you rely on the cron — trigger it once manually to confirm:
+```bash
+databricks bundle run pl_master_load -t prod
+```
+
+From here on: edit a notebook in `src/`, commit, push to `develop` → auto-deploy + test → merge to `main` when confident. No more manual notebook uploads through the UI.
