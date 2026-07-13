@@ -1,0 +1,112 @@
+name: Databricks Bundle CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'databricks/**'
+
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'databricks/**'
+
+  workflow_dispatch:
+
+jobs:
+
+  validate:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: databricks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: databricks/setup-cli@main
+
+      - name: Validate Bundle
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+        run: |
+          databricks bundle validate -t dev
+
+  deploy-dev:
+
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+
+    needs: validate
+
+    runs-on: ubuntu-latest
+
+    environment: dev
+
+    defaults:
+      run:
+        working-directory: databricks
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: databricks/setup-cli@main
+
+      - name: Deploy DEV
+
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+
+        run: |
+
+          databricks bundle deploy -t dev \
+          --var="warehouse_id=${{ secrets.WAREHOUSE_ID_DEV }}" \
+          --var="job_notification_email=${{ secrets.NOTIFY_EMAIL }}"
+
+      - name: Smoke Test
+
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+
+        run: |
+          databricks bundle run pl_master_load -t dev
+
+  deploy-prod:
+
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    needs: validate
+
+    runs-on: ubuntu-latest
+
+    environment: prod
+
+    defaults:
+      run:
+        working-directory: databricks
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: databricks/setup-cli@main
+
+      - name: Deploy PROD
+
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
+
+        run: |
+
+          databricks bundle deploy -t prod \
+          --var="warehouse_id=${{ secrets.WAREHOUSE_ID_PROD }}" \
+          --var="job_notification_email=${{ secrets.NOTIFY_EMAIL }}"
