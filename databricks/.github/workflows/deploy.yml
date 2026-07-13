@@ -79,11 +79,11 @@ jobs:
 
       - name: Deploy bundle to prod
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_PROD }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_PROD }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
         run: |
           databricks bundle deploy -t prod \
-            --var="warehouse_id=${{ secrets.WAREHOUSE_ID_PROD }}" \
+            --var="warehouse_id=${{ secrets.WAREHOUSE_ID_DEV }}" \
             --var="job_notification_email=${{ secrets.NOTIFY_EMAIL }}"
 
         # Note: prod is NOT run automatically here - it deploys with the
